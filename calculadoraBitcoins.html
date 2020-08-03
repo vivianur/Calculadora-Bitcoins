@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Calculadora de Bitcoins</title>
+		<style>
+			html, body{
+				margin: 0 auto;
+				width: 100%;
+				height: 100%;	
+				min-width: 100%;				
+				max-width: 100%;
+				min-height: 100%;
+				max-height: 100%;
+			}
+			body{		
+				background: #62727f;
+				text-align: center;
+				vertical-align: middle;
+			}
+			fieldset{
+				margin-top: 1.1%;
+				width: 100%;
+				min-width: 100%;				
+				max-width: 100%;
+				display: block;	
+				border: none;				
+			}
+			body [name^="form"] {
+				width: 80%;
+				height: auto;
+				display: inline-grid;		
+			}
+			form p{
+				margin: 0px;
+				margin-top: 4.3px;
+				margin-bottom: 4.3px;
+				padding: 0px;
+			}
+			fieldset legend{
+				font-size: 20px;
+				margin-bottom: 3px;
+			}
+			input[type="number"]{
+				margin: 0 auto;
+				margin-top: 0px;
+				padding: 0px;
+				width: 75%;
+				border-radius: 4px;
+				height: 35px;
+				font-size: 14px;	    
+			}
+			.vlComissao{				
+				margin: 0 auto;
+				box-shadow: #545252 1px 3px 12px;
+			}
+			#btnAnalisarLucro{
+				display: none;
+				background-color: green;
+				border-radius: 4px;
+				height: 35px;
+				font-size: 14px;
+			}
+			#btnAnalisarLucro.visible{
+				margin-top: 0.2%;
+				margin-bottom: 0.5%;
+				display: inline-block;
+			}
+			#lucro, #lucro > #vlLucro{
+				margin: 0 auto;
+				padding: 0px;				
+			}
+			#lucro{
+				display: none;		
+				position: fixed;
+				bottom: 0;
+				width: 100%;
+				height: 6%;
+				z-index: 9999;				
+				box-shadow: #9d9d9d 0px 0px 8px;
+			}
+			#lucro > #vlLucro{
+				position: relative;
+				display: table-cell;
+				width: 100%;
+				height: 100%;				
+				text-align: center;
+				font-weight: bold;
+				vertical-align: middle;		
+				font-size: 25px;	
+				text-shadow: #adadad 0px 0px 10px;				
+			}
+			#lucro.visible{
+				display: table;			
+			}
+			#lucro.positivo{
+				color: #fff;			
+				background: green;			
+			}
+			#lucro.negativo{
+				color: #fff;
+				background: red;						
+			}
+			#lucro.neutro{
+				color: #000;
+				background: yellow;						
+			}
+		</style>
+	</head>
+	<body>
+		<fieldset>
+			<legend>Compra de Bitcoins:</legend>
+			<form name="formCompraBitcoins" id="formCompraBitcoins">
+				<p>Preço da unidade bitcoin:</p> <input type="number" name="vlUnidBitcoin" class="vlUnidBitcoin" value="0.00000"> <br>
+				<p>% Comissão em Bitcoins:</p> <input type="number"  name="pctComissaoBitcoins" class="pctComissao" value="0.000"> <output type="text" disabled name="vlPctComissao" class="vlComissao"></output> <br>		
+				<p>Valor em Reais:</p> <input type="number"  name="vlReais" class="vlReais" value="0.00"> <br>
+				<p>Quantidade de Bitcoins:</p> <input type="number" disabled name="vlBitcoins" class="vlBitcoins" value="0.00000"> <br>	
+			</form>		
+		</fieldset>		
+		<input type="button" name="btnAnalisarLucro" id="btnAnalisarLucro" value="Analisar Lucro">
+		<br>
+		<fieldset>
+			<legend>Venda de Bitcoins:</legend>
+			<form name="formVendaBitcoins" id="formVendaBitcoins">
+				<p>Preço da unidade bitcoin:</p> <input type="number" name="vlUnidBitcoin" class="vlUnidBitcoin" value="0.00000"> <br>	
+				<p>% Comissão em R$:</p> <input type="number"  name="pctComissaoReais" class="pctComissao" value="0.000"> <output name="vlPctComissao" class="vlComissao"></output> <br>
+				<p>Quantidade de Bitcoins:</p> <input type="number" name="vlBitcoins" class="vlBitcoins" value="0.00000"> <br>
+				<p>Valor em Reais:</p> <input type="number" disabled name="vlReais" class="vlReais" value="0.00"> <br>	
+			</form>
+		</fieldset>	
+		<div id="lucro"><p id="vlLucro"></p></div>
+		<script>	
+			let vlPctComissao = 0, vlComissao = 0, valorReais = 0, valorBitcoins = 0, valorUnidBitcoin = 0;			
+			const toNumber = (value, opc) => {return (value = (opc === 0) ? parseFloat(value) : parseInt(value));};
+			const isNumeric = (value) => {return !(isNaN(value)) && value !== Infinity};
+			const arredondar = (value, casas) => {
+				value = toNumber(value, 0);
+				return toNumber(value.toFixed(casas), 0);
+			};
+			const verificarValoresObj = (obj) => {
+				let valores = 0;
+				for(let chave in obj){
+					if(typeof(obj[chave]) !== "function" && typeof(obj[chave].value) !== "undefined"){
+						valores += arredondar(obj[chave].value, 0);
+					}					
+				}
+				return valores;
+			};
+			const disponibilizarAnalise = () => {
+				document.getElementById("btnAnalisarLucro").className = "visible";
+			};
+			const verificarDispAnalise = () => {
+				let valoresCompra = 0, valoresVenda = 0;
+				valoresCompra += verificarValoresObj(compra);
+				valoresVenda += verificarValoresObj(venda);
+				if(valoresCompra > 0 && valoresVenda > 0)
+					disponibilizarAnalise();
+			}
+			const analisarLucro = () => {
+				let lucro = arredondar((toNumber(venda.reais.value, 0) - toNumber(compra.reais.value, 0)), 2);
+				document.getElementById("vlLucro").innerHTML = "R$ " + lucro;
+				document.getElementById("lucro").className = "visible " + ((lucro === 0) ? "neutro" : (lucro > 0) ? "positivo" : "negativo");				
+			}			
+			const getValores = (obj) =>{
+				vlPctComissao = obj.pctComissao.value;
+				vlPctComissao = arredondar(vlPctComissao, 2);
+				valorReais = toNumber(obj.reais.value, 0);
+				valorBitcoins = toNumber(obj.bitcoins.value, 0);
+				valorUnidBitcoin = toNumber(obj.unidBitcoin.value, 0);					
+			};		
+			function Compra(){}	
+			Compra.prototype.form = document.formCompraBitcoins;			
+			Compra.prototype.pctComissao = document.formCompraBitcoins.getElementsByClassName("pctComissao")[0];
+			Compra.prototype.reais = document.formCompraBitcoins.getElementsByClassName("vlReais")[0];
+			Compra.prototype.bitcoins = document.formCompraBitcoins.getElementsByClassName("vlBitcoins")[0];
+			Compra.prototype.unidBitcoin = document.formCompraBitcoins.getElementsByClassName("vlUnidBitcoin")[0];
+			Compra.prototype.calcular = function(){	
+				getValores(this);
+				valorBitcoins = arredondar(valorReais/valorUnidBitcoin, 5);
+				vlComissao = arredondar((valorBitcoins * vlPctComissao/100), 5);
+				valorBitcoins = arredondar(valorBitcoins - vlComissao, 5);
+				if(isNumeric(valorBitcoins))
+					this.bitcoins.value = valorBitcoins;	
+				if(isNumeric(vlComissao))				
+					this.form.vlPctComissao.innerHTML = "B " + vlComissao;			
+			};
+			function Venda(){}		
+			Venda.prototype.form = document.formVendaBitcoins;
+			Venda.prototype.pctComissao = document.formVendaBitcoins.getElementsByClassName("pctComissao")[0];
+			Venda.prototype.reais = document.formVendaBitcoins.getElementsByClassName("vlReais")[0];
+			Venda.prototype.bitcoins = document.formVendaBitcoins.getElementsByClassName("vlBitcoins")[0];
+			Venda.prototype.unidBitcoin = document.formVendaBitcoins.getElementsByClassName("vlUnidBitcoin")[0];
+			Venda.prototype.calcular = function(){
+				getValores(this);
+				valorReais = arredondar(valorBitcoins * valorUnidBitcoin, 2);
+				vlComissao = arredondar((valorReais * vlPctComissao/100), 5);
+				valorReais = arredondar(valorReais - vlComissao, 2);
+				if(isNumeric(valorReais))
+					this.reais.value = valorReais;		
+				if(isNumeric(vlComissao))
+					this.form.vlPctComissao.innerHTML = "R$ " + vlComissao;
+			};
+			const compra = new Compra();
+			const venda = new Venda();		
+			document.formCompraBitcoins.addEventListener("input", function(){compra.calcular(), verificarDispAnalise();}, false);
+			document.formVendaBitcoins.addEventListener("input", function(){venda.calcular(), verificarDispAnalise();}, false);
+			document.getElementById("btnAnalisarLucro").addEventListener("click", function(){analisarLucro();});
+			/** Gabriel Tessarini **/
+		</script>
+	</body>
+	<!-- Gabriel Tessarini -->
+</html>
